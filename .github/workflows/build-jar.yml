@@ -8,6 +8,7 @@ on:
       - 'src/**'
       - 'pom.xml'
       - 'plugin.yml'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main
