@@ -6,7 +6,7 @@
 
 | 能力 | 说明 |
 | --- | --- |
-| server.jar 自动替换 | 启动时检查 `server.jar`；支持从配置的 URL/本地路径获取新 JAR；替换前自动备份（`server.jar.bak-<时间戳>-<随机>`）；SHA-256 或结构校验；任一步失败自动回滚；全程明确日志 |
+| server.jar 自动替换 | 启动时检查 `server.jar`；支持从配置的 URL/本地路径获取新 JAR；替换前自动备份（`server.jar.bak-<时间戳>-<随机>`）；SHA-256 或结构校验；任一步失败自动回滚；**旧备份自动清理**（默认保留最近 3 份，可配置）；全程明确日志 |
 | 临时文件随机化 | 每次运行使用唯一临时目录 `JavaPluginsPro-<随机ID>`，临时文件名由 `SecureRandom` 生成；随机名称仅用于避免运行实例之间的冲突；插件停止/程序退出时清理所有自己创建并登记的临时文件 |
 | 文件清理命令 | `/plugin cleanup [--dry-run]`：只删除插件自己创建并登记的文件；删除前检查路径，禁止 `..` 越界；不扫描、不删除任何系统文件；`--dry-run` 先列出待删除项；删除失败输出具体原因 |
 | 子进程管理 | 优先使用 Java API；确需外部进程（如 openssl）时保存 Process 对象与 PID 并登记；插件停止时 destroy → 等待 → 强制结束；不做任何隐藏/伪装/规避系统进程管理的行为 |
@@ -29,6 +29,7 @@ server-jar:
   source: ""                   # 新 JAR 来源：http(s) URL 或本地路径；留空=不自动替换
   expected-sha256: ""          # 可选：下载 JAR 的期望 SHA-256；留空=结构校验（zip 魔数+manifest）
   replace-on-start: true       # 每次启动执行检查/替换
+  max-backups: 3               # 最多保留最近 N 份备份，超出部分每次启动检查后自动删除
 temp:
   base-dir: ""                 # 临时目录基准；留空=系统临时目录
 shutdown:

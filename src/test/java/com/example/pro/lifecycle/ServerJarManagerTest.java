@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -220,6 +221,55 @@ class ServerJarManagerTest {
                     ServerJarManager.defaultVerifier(""), tempFiles, Log.console());
             assertEquals(ServerJarManager.Result.KEPT_EXISTING, manager.ensureServerJar());
             assertArrayEquals(original, bytes(target));
+        } finally {
+            tempFiles.close();
+        }
+    }
+
+    @Test
+    void backupRetentionIsEnforcedAutomatically() throws IOException {
+        TempFileManager tempFiles = newTempFiles();
+        try {
+            Path target = createJar(dir, "server.jar", "payload-0");
+            byte[] firstJarBytes = bytes(target);
+            final int[] round = {0};
+            ServerJarManager.JarSource cyclingSource = new ServerJarManager.JarSource() {
+                @Override
+                public Path fetch(Path downloadDir) throws IOException {
+                    round[0]++;
+                    Path source = createJar(dir, "src" + round[0] + ".jar", "payload-" + round[0]);
+                    Path staged = downloadDir.resolve("cycled-" + round[0] + ".jar");
+                    Files.copy(source, staged, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    return staged;
+                }
+
+                @Override
+                public String describe() {
+                    return "cycling-test-source";
+                }
+            };
+            ServerJarManager manager = new ServerJarManager(target, cyclingSource,
+                    ServerJarManager.defaultVerifier(""), tempFiles, Log.console(), 2);
+
+            for (int cycle = 1; cycle <= 5; cycle++) {
+                assertEquals(ServerJarManager.Result.UPDATED, manager.ensureServerJar());
+                assertTrue(manager.managedPaths().size() <= 2,
+                        "retention of 2 must never be exceeded, cycle " + cycle);
+            }
+            assertEquals(2, manager.managedPaths().size(), "exactly the newest 2 backups must remain");
+
+            // The newest backup (created during the last cycle, holding the previous jar) must
+            // still be present.
+            byte[] previousJar = bytes(dir.resolve("src4.jar"));
+            assertTrue(manager.managedPaths().stream().anyMatch(p -> {
+                try {
+                    return Arrays.equals(previousJar, bytes(p));
+                } catch (IOException e) {
+                    return false;
+                }
+            }), "the newest backup must survive retention trimming");
+            // And the replaced jar itself is the freshly installed one.
+            assertArrayEquals(bytes(dir.resolve("src5.jar")), bytes(target));
         } finally {
             tempFiles.close();
         }

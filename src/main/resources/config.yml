@@ -12,6 +12,9 @@ server-jar:
   expected-sha256: ""
   # Run the check/replacement on every server start.
   replace-on-start: true
+  # Keep only the newest N backups (server.jar.bak-*); older ones are deleted
+  # automatically after every startup check.
+  max-backups: 3
 
 temp:
   # Base directory for the randomized per-run temp folder.

@@ -70,10 +70,11 @@ public final class JavaPluginsPro extends JavaPlugin {
         Path serverRoot = resolveServerRoot();
         Path dataDir = getDataFolder().toPath().toAbsolutePath().normalize();
         Path serverJar = serverRoot.resolve(getConfig().getString("server-jar.path", "server.jar")).normalize();
+        int maxBackups = Math.max(1, getConfig().getInt("server-jar.max-backups", 3));
         jarManager = new ServerJarManager(serverJar,
                 ServerJarManager.fromConfig(getConfig().getString("server-jar.source", "")),
                 ServerJarManager.defaultVerifier(getConfig().getString("server-jar.expected-sha256", "")),
-                tempFiles, log);
+                tempFiles, log, maxBackups);
         cleaner = new SafeCleaner(List.of(tempFiles, jarManager),
                 List.of(tempFiles.runDir(), dataDir, serverRoot), log);
 

@@ -21,7 +21,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -81,11 +83,14 @@ public final class ServerJarManager implements CleanupRegistry {
     private static final DateTimeFormatter BACKUP_STAMP =
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
 
+    private static final int DEFAULT_MAX_BACKUPS = 3;
+
     private final Path serverJar;
     private final JarSource source;
     private final Verifier verifier;
     private final TempFileManager tempFiles;
     private final Log log;
+    private final int maxBackups;
     private final List<Path> backups = new CopyOnWriteArrayList<>();
 
     /**
@@ -95,11 +100,23 @@ public final class ServerJarManager implements CleanupRegistry {
      */
     public ServerJarManager(Path serverJar, JarSource source, Verifier verifier,
                             TempFileManager tempFiles, Log log) {
+        this(serverJar, source, verifier, tempFiles, log, DEFAULT_MAX_BACKUPS);
+    }
+
+    /**
+     * @param source     update source, or {@code null} when none is configured
+     * @param verifier   integrity check for downloaded and installed jars
+     * @param maxBackups how many newest backups to keep; older ones are deleted automatically
+     *                   after every startup check (minimum 1)
+     */
+    public ServerJarManager(Path serverJar, JarSource source, Verifier verifier,
+                            TempFileManager tempFiles, Log log, int maxBackups) {
         this.serverJar = serverJar.toAbsolutePath().normalize();
         this.source = source;
         this.verifier = verifier;
         this.tempFiles = tempFiles;
         this.log = log;
+        this.maxBackups = Math.max(1, maxBackups);
     }
 
     public boolean hasSource() {
@@ -111,7 +128,8 @@ public final class ServerJarManager implements CleanupRegistry {
     }
 
     /**
-     * Runs the full startup routine described in the class javadoc.
+     * Runs the full startup routine described in the class javadoc and then trims old backups
+     * down to the retention limit, so they can never accumulate without bound.
      *
      * @return {@link Result#UPDATED} when a new jar was installed and verified,
      *         {@link Result#KEPT_EXISTING} when the previous jar was kept (update failed but the
@@ -119,6 +137,14 @@ public final class ServerJarManager implements CleanupRegistry {
      *         {@link Result#FAILED} when no healthy jar is in place
      */
     public Result ensureServerJar() {
+        try {
+            return runStartupCheck();
+        } finally {
+            trimBackups();
+        }
+    }
+
+    private Result runStartupCheck() {
         try {
             boolean existed = Files.exists(serverJar);
             if (existed) {
@@ -228,6 +254,39 @@ public final class ServerJarManager implements CleanupRegistry {
     @Override
     public boolean unregister(Path path) {
         return backups.remove(path.toAbsolutePath().normalize());
+    }
+
+    /**
+     * Keeps only the newest {@code maxBackups} backups and deletes the rest with a log line per
+     * removal. Backups are ordered by file modification time (with the name as tie-breaker), so
+     * rapid replacements within the same second still identify the newest one correctly.
+     * Deletion failures keep the backup registered and are reported.
+     */
+    private void trimBackups() {
+        List<Path> snapshot = new ArrayList<>(backups);
+        if (snapshot.size() <= maxBackups) {
+            return;
+        }
+        snapshot.sort(Comparator.comparingLong(ServerJarManager::mtimeMillis).thenComparing(Path::compareTo));
+        int excess = snapshot.size() - maxBackups;
+        for (int i = 0; i < excess; i++) {
+            Path old = snapshot.get(i);
+            try {
+                Files.deleteIfExists(old);
+                backups.remove(old);
+                log.info("[server-jar] Removed old backup beyond retention of " + maxBackups + ": " + old);
+            } catch (IOException e) {
+                log.warn("[server-jar] Failed to remove old backup " + old + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private static long mtimeMillis(Path path) {
+        try {
+            return Files.getLastModifiedTime(path).toMillis();
+        } catch (IOException e) {
+            return 0L;
+        }
     }
 
     /** Builds a {@link JarSource} from a config string: http(s) URL or local file path. */
