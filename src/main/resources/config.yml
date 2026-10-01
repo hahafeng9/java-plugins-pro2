@@ -1,0 +1,23 @@
+# JavaPluginsPro configuration
+
+server-jar:
+  # Path of the server jar to manage. Relative paths resolve against the server root
+  # (the directory that contains the plugins folder).
+  path: "server.jar"
+  # Where to fetch a new jar when replacing: an http(s) URL or a local file path.
+  # Leave empty to disable automatic replacement.
+  source: ""
+  # Optional expected SHA-256 (64 hex chars) of the downloaded jar.
+  # When empty, a structural zip/jar check (magic bytes + manifest entry) is used instead.
+  expected-sha256: ""
+  # Run the check/replacement on every server start.
+  replace-on-start: true
+
+temp:
+  # Base directory for the randomized per-run temp folder.
+  # Empty = system temporary directory (java.io.tmpdir).
+  base-dir: ""
+
+shutdown:
+  # Max time in milliseconds to wait for plugin threads/child processes to stop.
+  join-timeout-millis: 10000

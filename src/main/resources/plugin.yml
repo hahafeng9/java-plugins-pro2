@@ -1,0 +1,15 @@
+name: JavaPluginsPro
+version: 2.0.0
+main: com.example.pro.JavaPluginsPro
+api-version: 1.20
+description: Hardened lifecycle, process and thread management for the java-plugins proxy plugin.
+author: hahafeng9
+commands:
+  plugin:
+    description: JavaPluginsPro lifecycle management
+    usage: /plugin <status|cleanup [--dry-run]|threads>
+    permission: javapluginspro.admin
+permissions:
+  javapluginspro.admin:
+    description: Allows managing JavaPluginsPro (status, cleanup, threads)
+    default: op

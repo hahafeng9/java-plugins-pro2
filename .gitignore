@@ -1,0 +1,20 @@
+# Build output
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Local secrets / environment (never commit credentials)
+.env
+github.env
+*.env
+
+# Logs and OS junk
+*.log
+Thumbs.db
+.DS_Store
