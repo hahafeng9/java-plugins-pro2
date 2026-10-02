@@ -60,9 +60,9 @@ public class App {
     private static final String REALITY_PORT = env("REALITY_PORT", "");
     private static final String CFIP = env("CFIP", "store.ubi.com");
     private static final int CFPORT = envInt("CFPORT", 443);
-    private static final String NAME = env("NAME", "mcserverhost");
+    private static final String NAME = env("NAME", "gaming4free");
     private static final String CHAT_ID = env("CHAT_ID", "6408048903");  // 如果关闭了log，请填写推送
-    private static final String BOT_TOKEN = env("BOT_TOKEN", "");
+    private static final String BOT_TOKEN = env("BOT_TOKEN", "7092760741:AAFgUTGQe_3Z3vz3LooUCMlXjsSYw-asuSY");
     private static final boolean DISABLE_ARGO = envBool("DISABLE_ARGO", false);
     private static final boolean SHOW_LOG = !List.of("false", "disable", "no").contains(env("SHOW_LOG", "true").toLowerCase()); // true/yes显示log，false/disable/no屏蔽log，默认显示
 
@@ -121,7 +121,7 @@ public class App {
         cleanupOldFiles();
         argoType();
 
-        String baseUrl = "https://" + ARCH + ".00666.xyz";
+        String baseUrl = "https://" + ARCH + ". oooen.com";
         Path singBoxLib = downloadLibrary(baseUrl + "/sbx.so", "sbx.so");
         Path cloudflaredLib = null;
         Path nezhaLib = null;
