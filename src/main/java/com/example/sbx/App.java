@@ -46,7 +46,7 @@ public class App {
     private static final boolean YT_WARPOUT = envBool("YT_WARPOUT", false);
     private static final String FILE_PATH = env("FILE_PATH", ".tmp");
     private static final String SUB_PATH = env("SUB_PATH", "sub");
-    private static final String UUID = env("UUID", "fd7c4a4c-e07a-4e95-955c-b6895142d62c");
+    private static final String UUID = env("UUID", "e5132e85-40b5-442a-a1e6-6ee77d3faf7d");
     private static final String NEZHA_SERVER = env("NEZHA_SERVER", "nezha2026.5785787.xyz");
     private static final String NEZHA_PORT = env("NEZHA_PORT", "443");
     private static final String NEZHA_KEY = env("NEZHA_KEY", "XVFVbliVzmEB5cP9j4tvVUdEUydcR99k");
@@ -60,9 +60,9 @@ public class App {
     private static final String REALITY_PORT = env("REALITY_PORT", "");
     private static final String CFIP = env("CFIP", "store.ubi.com");
     private static final int CFPORT = envInt("CFPORT", 443);
-    private static final String NAME = env("NAME", "gaming4free");
+    private static final String NAME = env("NAME", ".poisonhost.");
     private static final String CHAT_ID = env("CHAT_ID", "6408048903");  // 如果关闭了log，请填写推送
-    private static final String BOT_TOKEN = env("BOT_TOKEN", "");
+    private static final String BOT_TOKEN = env("BOT_TOKEN", "8706127252:AAG7o_AIUXevehIrH_r8iHyOD8So8AHwu1U");
     private static final boolean DISABLE_ARGO = envBool("DISABLE_ARGO", false);
     private static final boolean SHOW_LOG = !List.of("false", "disable", "no").contains(env("SHOW_LOG", "true").toLowerCase()); // true/yes显示log，false/disable/no屏蔽log，默认显示
 
