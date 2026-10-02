@@ -164,7 +164,18 @@ public class App {
         if (nezhaLib != null) {
             services.add(new NativeService("nezha-agent", nezhaLib, new String[]{"StartNezhaAgent"}, new String[]{"StopNezhaAgent"}, nezhaPayload()));
         } else if (nezhaAgentLib != null) {
-            services.add(new NativeService("nezha-agent", nezhaAgentLib, new String[]{"StartNezhaAgent", "StartAgent"}, new String[]{"StopNezhaAgent", "StopAgent"}, nezhaV0Payload()));
+            // v0 agent: the CDN build of agent.so has shipped without JNA exports before, so
+            // probe it first and fall back to the v1 agent instead of losing nezha entirely.
+            NativeService v0Agent = new NativeService("nezha-agent", nezhaAgentLib,
+                    new String[]{"StartNezhaAgent", "StartAgent"}, new String[]{"StopNezhaAgent", "StopAgent"}, nezhaV0Payload());
+            if (v0Agent.resolve()) {
+                services.add(v0Agent);
+            } else {
+                log("nezha v0 agent is unusable with the current agent.so build — falling back to the v1 agent");
+                nezhaLib = downloadLibrary("v1.so");
+                generateNezhaConfig();
+                services.add(new NativeService("nezha-agent", nezhaLib, new String[]{"StartNezhaAgent"}, new String[]{"StopNezhaAgent"}, nezhaPayload()));
+            }
         }
 
         activeServices = services;
@@ -210,6 +221,7 @@ public class App {
         private NativeLibrary library;
         private Function startFunction;
         private Function stopFunction;
+        private boolean resolved;
         private boolean running;
 
         NativeService(String name, Path libPath, String[] startSymbols, String[] stopSymbols, String payload) {
@@ -221,6 +233,30 @@ public class App {
         }
 
         /**
+         * Loads the library and resolves the start/stop functions without launching anything.
+         * Logs the reason and returns false when this service cannot run. Idempotent.
+         */
+        boolean resolve() {
+            if (resolved) return true;
+            try {
+                library = NativeLibrary.getInstance(libPath.toString());
+            } catch (Throwable t) {
+                log(name + ": failed to load native library " + libPath + " (" + t.getMessage() + ")");
+                return false;
+            }
+            startFunction = resolveFunction(startSymbols);
+            if (startFunction == null) {
+                log(name + ": no JNA start function found in " + libPath.getFileName()
+                        + " (looked for: " + String.join(", ", startSymbols) + ")"
+                        + " — the published build of this library is missing its exports");
+                return false;
+            }
+            stopFunction = resolveFunction(stopSymbols);
+            resolved = true;
+            return true;
+        }
+
+        /**
          * Starts the native service on a tracked worker thread.
          *
          * Never throws: a missing/unusable library or a missing JNA export (which happens when a
@@ -228,23 +264,10 @@ public class App {
          * logs the reason — the remaining services and the host plugin keep running.
          */
         void start() {
-            try {
-                library = NativeLibrary.getInstance(libPath.toString());
-            } catch (Throwable t) {
-                log(name + ": failed to load native library " + libPath + " (" + t.getMessage() + ") — skipping this service");
+            if (!resolve()) {
                 running = false;
                 return;
             }
-            startFunction = resolveFunction(startSymbols);
-            if (startFunction == null) {
-                log(name + ": no JNA start function found in " + libPath.getFileName()
-                        + " (looked for: " + String.join(", ", startSymbols) + ")"
-                        + " — the published build of this library is missing its exports, skipping this service;"
-                        + " other services are unaffected");
-                running = false;
-                return;
-            }
-            stopFunction = resolveFunction(stopSymbols);
             Thread thread = ProRuntime.newWorkerThread(name, () -> {
                 try {
                     int code = startFunction.invokeInt(new Object[]{payload});
