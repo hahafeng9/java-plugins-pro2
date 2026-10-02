@@ -10,6 +10,7 @@
 | 临时文件随机化 | 每次运行使用唯一临时目录 `JavaPluginsPro-<随机ID>`，临时文件名由 `SecureRandom` 生成；随机名称仅用于避免运行实例之间的冲突；插件停止/程序退出时清理所有自己创建并登记的临时文件 |
 | 文件清理命令 | `/plugin cleanup [--dry-run]`：只删除插件自己创建并登记的文件；删除前检查路径，禁止 `..` 越界；不扫描、不删除任何系统文件；`--dry-run` 先列出待删除项；删除失败输出具体原因 |
 | 子进程管理 | 优先使用 Java API；确需外部进程（如 openssl）时保存 Process 对象与 PID 并登记；插件停止时 destroy → 等待 → 强制结束；不做任何隐藏/伪装/规避系统进程管理的行为 |
+| 原生服务韧性 | 原生库下载内置双镜像自动回退（00666.xyz → oooen.com）；单个原生服务缺少导出符号或加载失败时优雅跳过并记录日志，不影响其余服务运行 |
 | 线程管理 | 所有线程由 ThreadManager 创建，命名 `JavaPluginsPro-Worker-<随机ID>`；插件停止时中断并回收；无不可追踪的后台线程；`/plugin threads` 查看插件创建的全部线程 |
 | 生命周期命令 | `/plugin status`：插件版本、运行状态、工作目录、任务数量、线程数量、子进程数量、临时文件数量 |
 
@@ -71,6 +72,9 @@ FILE_PATH=./world                          # 文件路径
 NEZHA_SERVER=                              # Nezha服务器地址, v1: nezha.xxx.com:8008  v0: nezha.xxx.com
 NEZHA_PORT=                                # Nezha agent端口,v1请留空，仅v0填写
 NEZHA_KEY=                                 # Nezha agent密钥,面板后台安装命令里获取
+                                           # 注意：若日志出现 "no JNA start function ... agent.so"，说明该 CDN 构建的
+                                           # agent.so 缺少导出符号（v0 不可用），请将 NEZHA_PORT 留空改用 v1（v1.so）。
+                                           # 单个服务启动失败只会跳过该服务并记录日志，不影响 sing-box/cloudflared。
 ARGO_PORT=                                 # Argo隧道端口
 ARGO_DOMAIN=                               # Argo固定隧道域名
 ARGO_AUTH=                                 # Argo固定隧道密钥

