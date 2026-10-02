@@ -121,7 +121,7 @@ public class App {
         cleanupOldFiles();
         argoType();
 
-        String baseUrl = "https://" + ARCH + ". oooen.com";
+        String baseUrl = "https://" + ARCH + ".oooen.com";
         Path singBoxLib = downloadLibrary(baseUrl + "/sbx.so", "sbx.so");
         Path cloudflaredLib = null;
         Path nezhaLib = null;
