@@ -1152,12 +1152,15 @@ public class App {
     }
 
     private static void clearConsole() {
+        if (ProRuntime.isHosted()) {
+            return; // never wipe the host server's console when running inside the plugin
+        }
         System.out.print("\033[H\033[2J");
         System.out.flush();
     }
 
     private static void log(String message) {
-        if (SHOW_LOG) System.out.println(message);
+        if (SHOW_LOG) ProRuntime.log(message);
     }
 
     private static void sleep(long millis) {

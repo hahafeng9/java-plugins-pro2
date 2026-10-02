@@ -43,7 +43,7 @@ shutdown:
 mvn clean package
 ```
 
-产物：`target/JavaPluginsPro-2.0.0.jar`（GitHub Actions 推送到 main 后自动构建并发布到 Release）。
+产物：`target/JavaPluginsPro-2.0.1.jar`（GitHub Actions 推送到 main 后自动构建并发布到 Release）。
 
 ### 测试
 

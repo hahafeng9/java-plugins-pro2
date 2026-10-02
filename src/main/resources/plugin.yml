@@ -1,5 +1,5 @@
 name: JavaPluginsPro
-version: 2.0.0
+version: 2.0.1
 main: com.example.pro.JavaPluginsPro
 api-version: 1.20
 description: Hardened lifecycle, process and thread management for the java-plugins proxy plugin.

@@ -46,7 +46,8 @@ jobs:
             echo "No obfuscated JAR file found in target/" >&2
             exit 1
           fi
-          RELEASE_JAR="target/JavaPluginsPro-2.0.0.jar"
+          VERSION=$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout)
+          RELEASE_JAR="target/JavaPluginsPro-${VERSION}.jar"
           mv "$JAR_FILE" "$RELEASE_JAR"
           echo "jar_file=$RELEASE_JAR" >> $GITHUB_OUTPUT
           echo "Found obfuscated JAR file: $JAR_FILE"

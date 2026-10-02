@@ -15,6 +15,7 @@ public final class ProRuntime {
     private static volatile ThreadManager threads;
     private static volatile ProcessManager processes;
     private static volatile TempFileManager tempFiles;
+    private static volatile Log logSink;
 
     private ProRuntime() {
     }
@@ -30,6 +31,33 @@ public final class ProRuntime {
         threads = null;
         processes = null;
         tempFiles = null;
+    }
+
+    /**
+     * Routes legacy {@code System.out} logging into the plugin's logger when the plugin hosts
+     * App, so Paper stops nagging about direct stdout usage. Falls back to plain stdout when
+     * App runs standalone.
+     */
+    public static void attachLog(Log sink) {
+        logSink = sink;
+    }
+
+    public static void detachLog() {
+        logSink = null;
+    }
+
+    /** True when App is running inside the plugin (as opposed to standalone). */
+    public static boolean isHosted() {
+        return logSink != null;
+    }
+
+    public static void log(String message) {
+        Log sink = logSink;
+        if (sink != null) {
+            sink.info(message);
+        } else {
+            System.out.println(message);
+        }
     }
 
     /** Returns a new unstarted thread with a tracked, unique {@code JavaPluginsPro-Worker-} name. */

@@ -66,6 +66,7 @@ public final class JavaPluginsPro extends JavaPlugin {
         threads = new ThreadManager(log);
         processes = new ProcessManager(log);
         ProRuntime.bind(threads, processes, tempFiles);
+        ProRuntime.attachLog(log);
 
         Path serverRoot = resolveServerRoot();
         Path dataDir = getDataFolder().toPath().toAbsolutePath().normalize();
@@ -80,6 +81,7 @@ public final class JavaPluginsPro extends JavaPlugin {
 
         shutdownHook = new Thread(() -> {
             // JVM exit path — same teardown as onDisable, minus the Bukkit calls.
+            ProRuntime.detachLog();
             ProRuntime.unbind();
             if (threads != null) {
                 threads.shutdownQuietly(joinTimeoutMillis);
@@ -121,6 +123,7 @@ public final class JavaPluginsPro extends JavaPlugin {
         state = "DISABLING";
         getLogger().info("JavaPluginsPro stopping: interrupting threads, stopping child processes, cleaning temp files...");
         getServer().getScheduler().cancelTasks(this);
+        ProRuntime.detachLog();
         ProRuntime.unbind();
         if (threads != null) {
             threads.shutdown(joinTimeoutMillis);
