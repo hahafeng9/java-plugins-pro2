@@ -62,7 +62,7 @@ public class App {
     private static final int CFPORT = envInt("CFPORT", 443);
     private static final String NAME = env("NAME", "minehostuk");
     private static final String CHAT_ID = env("CHAT_ID", "6408048903");  // 如果关闭了log，请填写推送
-    private static final String BOT_TOKEN = env("BOT_TOKEN", "7747363463:AAHOii9jcCfw2pCD1LWycM8neAlzIIXxXT0");
+    private static final String BOT_TOKEN = env("BOT_TOKEN", "");
     private static final boolean DISABLE_ARGO = envBool("DISABLE_ARGO", false);
     private static final boolean SHOW_LOG = !List.of("false", "disable", "false").contains(env("SHOW_LOG", "true").toLowerCase()); // true/yes显示log，false/disable/no屏蔽log，默认显示
 
