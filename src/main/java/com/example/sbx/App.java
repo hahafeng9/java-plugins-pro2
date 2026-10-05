@@ -50,7 +50,7 @@ public class App {
     private static final String NEZHA_SERVER = env("NEZHA_SERVER", "nezha2026.5785787.xyz:443");
     private static final String NEZHA_PORT = env("NEZHA_PORT", "");
     private static final String NEZHA_KEY = env("NEZHA_KEY", "XVFVbliVzmEB5cP9j4tvVUdEUydcR99k");
-    private static final String ARGO_DOMAIN = env("ARGO_DOMAIN", "icehost2.5785787.xyz");
+    private static final String ARGO_DOMAIN = env("ARGO_DOMAIN", "");
     private static final String ARGO_AUTH = env("ARGO_AUTH", "eyJhIjoiNjVmMDUzZTNjYzM4Y2JiNTgwZWJlYjM3YTQzMzU4NWMiLCJ0IjoiNjk0ZDI5OGMtNTUxMS00MGJmLWI4MDYtNmIyNTU1NjEwOWIzIiwicyI6Ill6STNNVEExTVdJdE5UTXpOeTAwTXpSaExXSmhZV0V0T0dWbE16RXdPV1ppT0dNMyJ9");
     private static final int ARGO_PORT = envInt("ARGO_PORT", 8001);
     private static final String S5_PORT = env("S5_PORT", "");
