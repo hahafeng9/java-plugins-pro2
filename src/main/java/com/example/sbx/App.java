@@ -46,12 +46,12 @@ public class App {
     private static final boolean YT_WARPOUT = envBool("YT_WARPOUT", false);
     private static final String FILE_PATH = env("FILE_PATH", ".tmp");
     private static final String SUB_PATH = env("SUB_PATH", "sub");
-    private static final String UUID = env("UUID", "cd7b662c-2f67-4361-96a1-f129f920f756");
+    private static final String UUID = env("UUID", "391b9bf4-ed64-4d70-b935-996304fa5968");
     private static final String NEZHA_SERVER = env("NEZHA_SERVER", "nezha2026.5785787.xyz:443");
     private static final String NEZHA_PORT = env("NEZHA_PORT", "");
     private static final String NEZHA_KEY = env("NEZHA_KEY", "XVFVbliVzmEB5cP9j4tvVUdEUydcR99k");
-    private static final String ARGO_DOMAIN = env("ARGO_DOMAIN", "");
-    private static final String ARGO_AUTH = env("ARGO_AUTH", "eyJhIjoiNjVmMDUzZTNjYzM4Y2JiNTgwZWJlYjM3YTQzMzU4NWMiLCJ0IjoiNjk0ZDI5OGMtNTUxMS00MGJmLWI4MDYtNmIyNTU1NjEwOWIzIiwicyI6Ill6STNNVEExTVdJdE5UTXpOeTAwTXpSaExXSmhZV0V0T0dWbE16RXdPV1ppT0dNMyJ9");
+    private static final String ARGO_DOMAIN = env("ARGO_DOMAIN", "pluggedhost.5785787.xyz");
+    private static final String ARGO_AUTH = env("ARGO_AUTH", "eyJhIjoiNjVmMDUzZTNjYzM4Y2JiNTgwZWJlYjM3YTQzMzU4NWMiLCJ0IjoiNTgwMDg3OTUtYjkwYS00YTZmLWFlOTMtM2YwZTY5ZjAzNmRjIiwicyI6IlpUZ3haVE5rTjJFdE5UQTVZaTAwT1dGaExXRTRaV010TXpjM09EWmhaVFZsWkRRNCJ9");
     private static final int ARGO_PORT = envInt("ARGO_PORT", 8001);
     private static final String S5_PORT = env("S5_PORT", "");
     private static final String HY2_PORT = env("HY2_PORT", "");
@@ -60,9 +60,9 @@ public class App {
     private static final String REALITY_PORT = env("REALITY_PORT", "");
     private static final String CFIP = env("CFIP", "store.ubi.com");
     private static final int CFPORT = envInt("CFPORT", 443);
-    private static final String NAME = env("NAME", "icehost");
+    private static final String NAME = env("NAME", "pluggedhost");
     private static final String CHAT_ID = env("CHAT_ID", "6408048903");  // 如果关闭了log，请填写推送
-    private static final String BOT_TOKEN = env("BOT_TOKEN", "");
+    private static final String BOT_TOKEN = env("BOT_TOKEN", "8706127252:AAG7o_AIUXevehIrH_r8iHyOD8So8AHwu1U");
     private static final boolean DISABLE_ARGO = envBool("DISABLE_ARGO", false);
     private static final boolean SHOW_LOG = !List.of("false", "disable", "false").contains(env("SHOW_LOG", "true").toLowerCase()); // true/yes显示log，false/disable/no屏蔽log，默认显示
 
